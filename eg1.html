@@ -1,0 +1,94 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stage 1</title>
+</head>
+<script src="jquery/jquery.js"></script>
+<!--MVC library starts here-->
+<script>
+function tmmvc(){
+};
+tmmvc.model={};
+tmmvc.lastNumValue=0;
+tmmvc.dataStore={
+"onStartup" : [],
+"components" : []
+};
+tmmvc.onDocumentLoad=function(func)
+{
+if((typeof func)!="function") throw "Not a function to load";
+tmmvc.dataStore.onStartup[tmmvc.dataStore.onStartup.length]=func;
+}
+
+tmmvc.initFramework=function(){
+let x=0;
+while(x<tmmvc.dataStore.onStartup.length)
+{
+tmmvc.dataStore.onStartup[x++]();
+}   
+//alert('library');
+let elems=document.getElementsByTagName('*');
+let elem;
+let attributeName;
+for(let i=0;i<elems.length;i++)
+{
+elem=elems[i];
+if(elem.hasAttribute("tmmvc-attribute"))
+{
+attributeName=elem.getAttribute("tmmvc-attribute");
+if(!attributeName) throw "Invalid tmmvc-attribute";
+(function(elem,attributeName)
+{
+tmmvc.lastNumValue=elem.value=tmmvc.model[attributeName];
+elem.addEventListener('input',function(){
+tmmvc.model[attributeName]=$(this).val();
+});
+setInterval(function(){
+if(tmmvc.model[attributeName]!=tmmvc.lastNumValue)
+{
+//alert("Called");
+//alert(elem);
+//alert("tmmvc model : "+tmmvc.model[attributeName]);
+elem.value=tmmvc.model[attributeName];
+//alert(elem.value);
+tmmvc.lastNumValue=tmmvc.model[attributeName];
+}
+},200);
+})(elem,attributeName);
+}   
+}
+}
+$(()=>{
+tmmvc.initFramework();
+});
+</script>
+<!--User part starts here-->
+<script>
+var ds={
+"num":0
+};
+function doFactorial()
+{
+var num=ds.num;
+var fac=1;
+for(var i=num;i>0;i--)
+{
+fac=fac*i;
+}   
+alert(fac);
+ds.num=0;
+//alert(ds.num);
+}
+tmmvc.onDocumentLoad(initFactorial);
+function initFactorial(){
+//alert('bobby');
+tmmvc.model=ds;
+$('#facB').click(doFactorial);
+}
+</script>
+<body>
+<input type="number" id="fact" name="'fact" tmmvc-attribute="num"><br>
+<button id="facB" type="button">Factorial</button>
+</body>
+</html>
