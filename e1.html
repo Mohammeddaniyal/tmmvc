@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stage 1</title>
+</head>
+<script src="jquery/jquery.js"></script>
+<!--MVC library starts here-->
+<script>
+
+function match(text)
+{
+  let start = text.indexOf("{{");
+  if(start==-1) return false;
+  let end= text.indexOf("}}",start+2);
+  if(end==-1 || start>end) return false;
+  return true;
+}
+
+function getTextNodes(element, textNodes) {
+    let children = element.childNodes;
+    for (let i = 0; i < children.length; i++) {
+        let node = children[i];
+
+        if (node.nodeType === 3) { // Text node
+            let text=node.nodeValue.trim();
+            if(match(text))//(/{{.*?}}/.test(text))
+        {
+            textNodes.push(node);
+        }
+        } else if (node.nodeType === 1) { // Element node
+            getTextNodes(node, textNodes); // recurse on the actual child
+        }
+    }
+}
+
+$(() => {
+    let body = document.body;
+    let textNodes = [];
+
+    getTextNodes(body, textNodes);
+
+    alert("Found text nodes: " + textNodes.length);
+    textNodes.forEach(t => alert(t.nodeValue.trim()));
+});
+</script>
+<!--User part starts here-->
+<script>
+</script>
+<body>
+{{xyz}}
+<div>
+    {dfdfdf}}
+    {dfdf}
+    <div>{{ddddd}}</div>
+    {{pqr}}
+    <span>{{hdfh}}
+        <div>
+            {{fds}}
+        <div>{{ddddd}}</div>
+    {{pqr}}
+    <span>{{hdfh}}
+        <div>
+            {{fds}}
+        </div>
+        </div>
+
+    </span>
+</div>
+</body>
+</html>
