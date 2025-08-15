@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang='en'>
+
+<head>
+    <meta charset="'utf-8">
+    <title>example to call function wihtout it's name</title>
+</head>
+<script src="jquery/jquery.js"></script>
+<script>
+    function abcd(a,b)
+    {
+        alert(a+b);
+    }
+
+    class whatever
+    {
+        constructor()
+        {
+
+        }
+        ijk(e,f,g){
+            alert(e+f+g);
+        }
+    }
+
+    $(()=>{
+        var fn='abcd';
+        var e=10;
+        var f=20;
+        eval(fn+'('+e+','+f+')');
+
+        var wha=new whatever();
+        fn='ijk';
+        var e=100;
+        var f=200;
+        var g=300;
+        //wha.ijk(e,f,g);
+        eval("wha."+fn+'('+e+','+f+','+g+')');
+    });
+</script>
+<body>
+
+</body>
+</html>
