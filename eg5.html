@@ -1,0 +1,397 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Stage 5</title>
+</head>
+<script src="jquery/jquery.js"></script>
+<!--MVC library starts here-->
+<script>
+function tmmvc(){
+};
+tmmvc.model={};
+tmmvc._model={};
+tmmvc.lastNumValue=0;
+tmmvc.runtime={
+"onStartup" : [],
+"bindings" : []
+};
+tmmvc.onDocumentLoad=function(func)
+{
+if((typeof func)!="function") throw "Not a function to load";
+tmmvc.runtime.onStartup[tmmvc.runtime.onStartup.length]=func;
+}
+
+function replaceMustachePlaceholders(text) {
+return  text.replace(/{{\s*(\w+)\s*}}/g, (match, key) => {
+        return tmmvc.model[key] !== undefined ? tmmvc.model[key] : match;
+    });
+// Output: "Hello John, you are 25 years old."
+
+}
+tmmvc.changeInDS=false;
+function handlePlaceHolders(element)
+{
+      let children = element.childNodes;
+    for (let i = 0; i < children.length; i++) {
+        let node = children[i];
+
+        if (node.nodeType === 3) { // Text node
+            let text=node.nodeValue.trim();
+            text=replaceMustachePlaceholders(text)
+            node.nodeValue=text;
+        } else if (node.nodeType === 1) { // Element node
+            let attributesName=node.getAttributeNames();
+            let attributeValue;
+            let attributeName;
+            for(let k=0;k<attributesName.length;++k)
+        {
+            attributeName=attributesName[k];
+            attributeValue=node.getAttribute(attributeName);
+            //alert(attributeValue);
+            if(attributeName==='checked')
+            {
+                let key=attributeValue.match(/{{\s*(\w+)\s*}}/);
+                alert(key[1]);
+                key=key[1];
+                let checked=false;
+                if(tmmvc.model[key]==='true' || tmmvc.model[key]===true) checked=true;
+                alert(checked);
+                
+                node.checked= checked;
+            }    
+            
+            else if(attributeValue)
+                {
+            attributeValue=replaceMustachePlaceholders(attributeValue);
+            node.setAttribute(attributeName,attributeValue);
+            //console.log("After:", attributeName, "=", node.getAttribute(attributeName));
+            //alert(node.getAttribute(attributes[k]));
+                }
+        }
+            handlePlaceHolders(node); // recurse on the actual child
+        }
+    }
+}
+
+
+tmmvc.initFramework=function(){
+let x=0;
+while(x<tmmvc.runtime.onStartup.length)
+{
+tmmvc.runtime.onStartup[x++]();
+}   
+tmmvc._model=JSON.parse(JSON.stringify(tmmvc.model));
+//alert('library');
+let elems=document.getElementsByTagName('*');
+handlePlaceHolders(document.body);
+for(let i=0;i<elems.length;i++)
+{
+let elem;
+let attributeName;
+let bindTo;
+let previousValue;
+elem=elems[i];
+if(elem.hasAttribute("tmmvc-attribute"))
+{
+attributeName=elem.getAttribute("tmmvc-attribute");
+if(!attributeName) throw "Invalid tmmvc-attribute";
+// Use an Immediately Invoked Function Expression (IIFE) to create a separate scope
+// for the current `elem` and `attributeName` values in this loop iteration.
+// Without the IIFE, the event listener and setInterval callbacks would capture
+// the same outer-scope variables, which get overwritten in subsequent iterations,
+// causing all bindings to reference the last element processed.
+// Passing `elem` and `attributeName` as parameters ensures each callback works
+// with the correct element/model attribute pair.
+let tmmvc_bind_to=elem.getAttribute("tmmvc-bind-to");
+let tagName;
+let type;
+type=elem.type.toLowerCase();
+
+if(!tmmvc_bind_to)
+{
+    tagName=elem.tagName.toLowerCase();
+    //alert("tagName "+tagName);
+    // switch to default accordingly the tag
+    // for example if the tag is input then value attribute
+    // for a(anchoor) its href
+    // for img src
+    if(tagName=="input" || tagName=="button" || tagName=="select")
+    {
+        tmmvc_bind_to="value";
+    }else if(tagName=="img")
+    {
+        tmmvc_bind_to="src";
+    }else if(tagName=="select")
+    {
+        tmmvc_bind_to="value";
+    }
+    else if(tagName=="a")
+    {
+        tmmvc_bind_to="href";
+    }
+   // alert("attribute binded "+tmmvc_bind_to)
+}
+else
+{
+    // validate is the binded attribute is valid if not throw exception, i guess no need to check is valid
+    // or not becuase it allows custom attribvute in js
+    // do nothing
+    //alert("else part "+tmmvc_bind_to)
+}
+
+bindTo=tmmvc_bind_to;
+
+(function(elem,attributeName,bindTo,type)
+{
+    tagName=elem.tagName.toLowerCase();
+
+if(tagName=='input')
+{
+previousValue=tmmvc.model[attributeName];
+    if(type=="text" || type=="number"){
+elem[bindTo]=tmmvc.model[attributeName];
+    elem.addEventListener('input',function(){
+    tmmvc.model[attributeName]=$(this).val();
+    });
+}else if(type=="radio"){
+    
+    //alert(elem.tagName);
+    //alert(elem.type);
+    //alert("Value "+elem.value);
+    previousValue=tmmvc.model[attributeName];
+    //alert(elem.value==tmmvc.model[attributeName])
+    elem.checked=(elem.value===tmmvc.model[attributeName]);
+    
+    
+    elem.addEventListener('change',function(){
+        alert($(this).val());
+    tmmvc.model[attributeName]=$(this).val();
+    });
+}else if(type==="checkbox")
+{
+    previousValue=tmmvc.model[attributeName];
+    alert(elem.checked);
+    elem.checked=(tmmvc.model[attributeName]);
+    alert("Hell "+ elem.checked);
+    elem.addEventListener('change',function(){
+        if(this.checked)
+      {
+        tmmvc.model[attributeName]=true;
+    }else{
+        tmmvc.model[attributeName]=false;
+    }
+});
+}
+}else if(tagName=='select')
+{
+    if(type==='select-one')
+    {    
+    previousValue=tmmvc.model[attributeName];
+    alert("select "+elem.value);
+    console.log(tmmvc.model[attributeName]);
+    elem[bindTo]=tmmvc.model[attributeName];
+   
+    console.log(elem.value);
+    elem.addEventListener('change',function(){
+    tmmvc.model[attributeName]=$(this).val();
+    });
+}else if(type==='select-multiple')
+{
+    let valuesToSelect=tmmvc.model[attributeName];
+    Array.from(elem.options).forEach(option => {
+  option.selected = valuesToSelect.includes(option.value);
+});
+
+    elem.addEventListener('change',function(){
+        let selectValues=[];
+        for(let i=0;i<this.options.length;i++)
+    {
+        let option=this.options[i];
+        if(option.selected)
+    {
+        selectValues[selectValues.length]=option.value;
+    }
+    }
+        tmmvc.model[attributeName]=selectValues;
+    });
+
+
+}
+
+}
+setInterval(function(){
+
+function arrayEquals(a,b)
+{
+    if(!(Array.isArray(a) && Array.isArray(b))) return false;
+    return a.length===b.length && a.every((value,index)=> value === b[index]);
+
+}
+
+// check if original ds values changed or not
+var keys=Object.keys(tmmvc.model);
+for(var i=0;i<keys.length;++i)
+{
+    let key=keys[i];
+     
+
+    
+    if( !Array.isArray(tmmvc.model[key]) && tmmvc.model[key]!=tmmvc._model[key])
+{
+    tmmvc._model[key]=JSON.parse(JSON.stringify(tmmvc.model[key]));
+    alert("Before "+tmmvc._model[key]+" After "+tmmvc.model[key]);
+}else if(Array.isArray(tmmvc.model[key]))
+{
+    if(!arrayEquals(tmmvc.model[key],tmmvc._model[key]))
+{
+    tmmvc._model[key]=JSON.parse(JSON.stringify(tmmvc.model[key]));
+    alert("Before "+tmmvc._model[key]+" After "+tmmvc.model[key]);
+}
+}
+}
+
+
+let x;
+for(x=0;x<tmmvc.runtime.bindings.length;++x)
+{
+    
+    let binding=tmmvc.runtime.bindings[x];
+    let currentValue=tmmvc.model[binding.modelProperty];
+    let type=binding.type;
+    if(type=='number' || type=='text'){
+    if(currentValue!=binding.previousValue)
+    {
+        binding.previousValue=currentValue;
+        binding.element[binding.bindTo]=currentValue;   
+    }
+}
+}
+},200);
+let bindingsIndex=tmmvc.runtime.bindings.length;
+//alert('Bindings length '+bindingsIndex)
+tmmvc.runtime.bindings[bindingsIndex]={
+    element: elem,
+    modelProperty: attributeName,
+    bindTo: bindTo,
+    type: type,
+    previousValue: previousValue
+};
+})(elem,attributeName,bindTo,type);
+}   
+}
+}
+$(()=>{
+tmmvc.initFramework();
+});
+</script>
+<!--User part starts here-->
+<script>
+var ds={
+"num":0,
+"button_type":"button",
+"name":"daniyal",
+"gender":"female",
+"fruit":"apple",
+"fruits":['apple','mango','grape'],
+"isIndian":false
+};
+function doFactorial()
+{
+var num=ds.num;
+var buttonType=ds.button_type;
+//alert("Button tag type "+document.querySelector("button").type);
+var fac=1;
+for(var i=num;i>0;i--)
+{
+fac=fac*i;
+}   
+alert(fac);
+ds.num=fac;
+ds.num=0;
+ds.button_type="submit";
+//alert("Button tag type "+document.querySelector("button").type);
+
+//alert(ds.num);
+}
+tmmvc.onDocumentLoad(initFactorial);
+function initFactorial(){
+//alert('bobby');
+tmmvc.model=ds;
+$('#facB').click(doFactorial);
+}
+function checkValue()
+{
+    alert(ds.gender);
+    alert(ds.isIndian);
+    alert(ds.fruit);
+    alert(ds.fruits);
+}
+function changeValues()
+{
+    alert('change values');
+    ds.name="Azka";
+    ds.button_type='whatever';
+    ds.fruit='Pomengranate';
+    ds.fruits=['apple','mango','grape','guvava'];
+}
+</script>
+<body>
+ <input type="number" id="fact" name="fact" tmmvc-attribute="num"><br><br>
+<!-- <button id="facB" tmmvc-attribute="button_type" tmmvc-bind-to="type">Factorial</button><br><br>
+
+<input type="text" tmmvc-attribute="name"><br><br>
+<br>
+
+<input type="radio" name="gender" value="male" tmmvc-attribute="gender">Male
+&nbsp;
+<input type="radio" name="gender" value="female" tmmvc-attribute="gender">Female
+
+<br>
+<button type="button" onclick="checkValue()">Check</button>
+<br>
+<input type="checkbox" id="isIndian" name="isIndian" tmmvc-attribute="isIndian"> Is Indian
+
+<br>
+
+<select tmmvc-attribute="fruit" tmmvc-bind-to="value">
+  <option value="">Select a fruit</option>
+  <option value="apple">Apple</option>
+  <option value="banana">Banana</option>
+  <option value="orange">Orange</option>
+  <option value="grape">Grape</option>
+  <option value="mango">Mango</option>
+</select>
+<br>
+<select id="fruits" name="fruits" tmmvc-attribute="fruits" tmmvc-bind-to="value" multiple>
+  <option value="apple">Apple</option>
+  <option value="banana">Banana</option>
+  <option value="orange">Orange</option>
+  <option value="grape">Grape</option>
+  <option value="mango">Mango</option>
+</select> -->
+
+<p>Welcome {{   name   }}</p>
+
+
+<button id="{{name}}" type="{{button_type}}" onclick="changeValues()">Change values</button>
+<p>My name is {{name}}, I'm {{age}} years young and I love fruits {{fruits}}</p>
+
+<p>My hobby is {{hobby}}</p>
+
+<div data-fruits="{{fruits}}">Fruits list</div>
+Is Indian <input type="checkbox" checked={{isIndian}}>
+
+
+<a href="/{{name}}/{{button_type}}" title="User {{name}} with type {{button_type}}">Click me</a>
+<span>Order number: {{num}}</span>
+
+<!-- <img src="/img/{{fruit}}.jpg" alt="{{fruit}}"> -->
+
+<p>{{name}} is {{age}} years old and likes {{fruit}}</p>
+
+<div class="status-{{gender}}">{{gender}}</div>
+
+
+</body>
+</html>
