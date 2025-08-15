@@ -201,6 +201,7 @@ for(x=0;x<tmmvc.runtime.bindings.length;++x)
     if(type=='number' || type=='text'){
     if(currentValue!=binding.previousValue)
     {
+        alert(currentValue);
         binding.previousValue=currentValue;
         binding.element[binding.bindTo]=currentValue;   
     }
